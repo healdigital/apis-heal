@@ -1,5 +1,8 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { fetchJson } from '../utils/fetch.js';
+import { logger } from '../utils/logger.js';
+import { formatFields } from '../utils/formatters.js';
 
 const BOAMP_BASE =
   'https://boamp-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/boamp';
@@ -43,15 +46,10 @@ async function queryBoamp(params: {
   if (params.orderBy) searchParams.set('order_by', params.orderBy);
 
   const url = `${BOAMP_BASE}/records?${searchParams.toString()}`;
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(
-      `BOAMP API error: ${response.status} ${response.statusText}`,
-    );
-  }
-
-  return (await response.json()) as BoampResponse;
+  
+  logger.debug('Querying BOAMP API', { url, params });
+  
+  return fetchJson<BoampResponse>(url);
 }
 
 function formatBoampResults(data: BoampResponse): string {
@@ -63,20 +61,21 @@ function formatBoampResults(data: BoampResponse): string {
 
   for (const record of data.results) {
     const r = record.record ?? record;
-    lines.push(`---`);
-    if (r.objet) lines.push(`Objet: ${r.objet}`);
-    if (r.type_marche) lines.push(`Type: ${r.type_marche}`);
-    if (r.nature) lines.push(`Nature: ${r.nature}`);
-    if (r.acheteur) lines.push(`Acheteur: ${r.acheteur}`);
-    if (r.departement) lines.push(`Département: ${r.departement}`);
-    if (r.dateparution) lines.push(`Date parution: ${r.dateparution}`);
-    if (r.date_limite) lines.push(`Date limite: ${r.date_limite}`);
-    if (r.montant) lines.push(`Montant: ${r.montant}`);
-    if (r.lieu_execution)
-      lines.push(`Lieu d'exécution: ${r.lieu_execution}`);
-    if (r.cpv) lines.push(`CPV: ${r.cpv}`);
-    if (r.url_avis) lines.push(`URL: ${r.url_avis}`);
-    if (r.id) lines.push(`ID: ${r.id}`);
+    lines.push('---');
+    lines.push(...formatFields([
+      { label: 'Objet', value: r.objet },
+      { label: 'Type', value: r.type_marche },
+      { label: 'Nature', value: r.nature },
+      { label: 'Acheteur', value: r.acheteur },
+      { label: 'Département', value: r.departement },
+      { label: 'Date parution', value: r.dateparution },
+      { label: 'Date limite', value: r.date_limite },
+      { label: 'Montant', value: r.montant },
+      { label: "Lieu d'exécution", value: r.lieu_execution },
+      { label: 'CPV', value: r.cpv },
+      { label: 'URL', value: r.url_avis },
+      { label: 'ID', value: r.id },
+    ]));
     lines.push('');
   }
 
@@ -133,10 +132,16 @@ export function registerBoampTools(server: McpServer): void {
           orderBy: 'dateparution DESC',
         });
 
+        logger.info('BOAMP search completed', { 
+          totalCount: data.total_count,
+          resultsReturned: data.results.length,
+        });
+
         return {
           content: [{ type: 'text' as const, text: formatBoampResults(data) }],
         };
       } catch (error) {
+        logger.error('BOAMP search failed', error, { recherche, type_marche, departement });
         return {
           content: [
             {
@@ -167,6 +172,7 @@ export function registerBoampTools(server: McpServer): void {
         });
 
         if (data.total_count === 0) {
+          logger.debug('BOAMP marché not found', { id_annonce });
           return {
             content: [
               {
@@ -177,7 +183,20 @@ export function registerBoampTools(server: McpServer): void {
           };
         }
 
-        const record = data.results[0]!;
+        const record = data.results[0];
+        if (!record) {
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: `Aucune annonce trouvée avec l'ID: ${id_annonce}`,
+              },
+            ],
+          };
+        }
+
+        logger.info('BOAMP marché retrieved', { id_annonce });
+        
         return {
           content: [
             {
@@ -187,6 +206,7 @@ export function registerBoampTools(server: McpServer): void {
           ],
         };
       } catch (error) {
+        logger.error('BOAMP get marché failed', error, { id_annonce });
         return {
           content: [
             {
@@ -229,7 +249,10 @@ export function registerBoampTools(server: McpServer): void {
         const daysBack = jours ?? 7;
         const dateFrom = new Date();
         dateFrom.setDate(dateFrom.getDate() - daysBack);
-        const dateStr = dateFrom.toISOString().split('T')[0]!;
+        const dateStr = dateFrom.toISOString().split('T')[0];
+        if (!dateStr) {
+          throw new Error('Failed to format date');
+        }
 
         const deptFilter = DEPARTEMENTS_NORMANDIE.map(
           (d) => `departement="${d}"`,
@@ -243,6 +266,12 @@ export function registerBoampTools(server: McpServer): void {
           orderBy: 'dateparution DESC',
         });
 
+        logger.info('BOAMP veille BTP Normandie completed', {
+          daysBack,
+          totalCount: data.total_count,
+          resultsReturned: data.results.length,
+        });
+
         return {
           content: [
             {
@@ -252,6 +281,7 @@ export function registerBoampTools(server: McpServer): void {
           ],
         };
       } catch (error) {
+        logger.error('BOAMP veille BTP Normandie failed', error, { jours, recherche });
         return {
           content: [
             {
