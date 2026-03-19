@@ -10,19 +10,22 @@ import { registerBaseCarboneTools } from './tools/base-carbone.js';
 import { registerLegifranceTools } from './tools/legifrance.js';
 import { registerGeocodeTools } from './utils/geocode.js';
 
-const server = new McpServer({
-  name: 'french-public-apis',
-  version: '1.0.0',
-});
+function createServer(): McpServer {
+  const server = new McpServer({
+    name: 'french-public-apis',
+    version: '1.0.0',
+  });
 
-// Register all tool modules
-registerGeocodeTools(server);
-registerBoampTools(server);
-registerGeorisquesTools(server);
-registerCadastreTools(server);
-registerUrbanismeTools(server);
-registerBaseCarboneTools(server);
-registerLegifranceTools(server);
+  registerGeocodeTools(server);
+  registerBoampTools(server);
+  registerGeorisquesTools(server);
+  registerCadastreTools(server);
+  registerUrbanismeTools(server);
+  registerBaseCarboneTools(server);
+  registerLegifranceTools(server);
+
+  return server;
+}
 
 const app = express();
 app.use(express.json());
@@ -32,13 +35,14 @@ app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', server: 'french-public-apis', version: '1.0.0' });
 });
 
-// Stateless MCP endpoint
-const transport = new StreamableHTTPServerTransport({
-  sessionIdGenerator: undefined,
-});
-
+// Stateless MCP endpoint - new server+transport per request
 app.post('/mcp', async (req: Request, res: Response) => {
   try {
+    const server = createServer();
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+    });
+    await server.connect(transport);
     await transport.handleRequest(req, res, req.body);
   } catch (error) {
     console.error('Error handling MCP request:', error);
@@ -74,16 +78,8 @@ app.delete('/mcp', (_req: Request, res: Response) => {
 
 const PORT = process.env.PORT || 3100;
 
-async function main() {
-  await server.connect(transport);
-  app.listen(PORT, () => {
-    console.log(`MCP French APIs server listening on port ${PORT}`);
-    console.log(`Health: http://localhost:${PORT}/health`);
-    console.log(`MCP endpoint: http://localhost:${PORT}/mcp`);
-  });
-}
-
-main().catch((error) => {
-  console.error('Failed to start server:', error);
-  process.exit(1);
+app.listen(PORT, () => {
+  console.log(`MCP French APIs server listening on port ${PORT}`);
+  console.log(`Health: http://localhost:${PORT}/health`);
+  console.log(`MCP endpoint: http://localhost:${PORT}/mcp`);
 });
