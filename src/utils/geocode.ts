@@ -74,54 +74,6 @@ export function registerGeocodeTools(server: McpServer): void {
     {
       adresse: z
         .string()
-        .describe(
-          "Adresse postale complète (ex: '15 rue de la Paix, 76000 Rouen')",
-        ),
-    },
-    async ({ adresse }) => {
-      try {
-        const result = await geocodeAddress(adresse);
-        if (!result) {
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: `Aucun résultat trouvé pour l'adresse: "${adresse}"`,
-              },
-            ],
-          };
-        }
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Erreur géocodage: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    },
-  );
-}
-
-
-export function registerGeocodeTools(server: McpServer): void {
-  server.tool(
-    'geocoder_adresse',
-    "Convertit une adresse postale française en coordonnées GPS (latitude/longitude) et code INSEE. Utilise la Base Adresse Nationale (BAN). Indispensable pour alimenter les outils Géorisques, Cadastre et Urbanisme.",
-    {
-      adresse: z
-        .string()
         .min(1)
         .describe(
           "Adresse postale complète (ex: '15 rue de la Paix, 76000 Rouen')",
