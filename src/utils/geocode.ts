@@ -30,11 +30,9 @@ interface BanResponse {
   }>;
 }
 
-export async function geocodeAddress(
-  address: string,
-): Promise<GeocodedAddress | null> {
+export async function geocodeAddress(address: string): Promise<GeocodedAddress | null> {
   const url = `${BAN_BASE_URL}/search/?q=${encodeURIComponent(address)}&limit=1`;
-  
+
   logger.debug('Geocoding address', { address });
 
   const data = await fetchJson<BanResponse>(url);
@@ -70,14 +68,12 @@ export async function geocodeAddress(
 export function registerGeocodeTools(server: McpServer): void {
   server.tool(
     'geocoder_adresse',
-    "Convertit une adresse postale française en coordonnées GPS (latitude/longitude) et code INSEE. Utilise la Base Adresse Nationale (BAN). Indispensable pour alimenter les outils Géorisques, Cadastre et Urbanisme.",
+    'Convertit une adresse postale française en coordonnées GPS (latitude/longitude) et code INSEE. Utilise la Base Adresse Nationale (BAN). Indispensable pour alimenter les outils Géorisques, Cadastre et Urbanisme.',
     {
       adresse: z
         .string()
         .min(1)
-        .describe(
-          "Adresse postale complète (ex: '15 rue de la Paix, 76000 Rouen')",
-        ),
+        .describe("Adresse postale complète (ex: '15 rue de la Paix, 76000 Rouen')"),
     },
     async ({ adresse }) => {
       try {

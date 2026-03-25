@@ -2,14 +2,13 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { isLegifranceConfigured, getLegifranceToken } from '../utils/oauth.js';
 
-const LEGIFRANCE_BASE =
-  'https://api.piste.gouv.fr/dila/legifrance/lf-engine-app';
+const LEGIFRANCE_BASE = 'https://api.piste.gouv.fr/dila/legifrance/lf-engine-app';
 
 // Key legal codes for BTP
 const CODES_BTP: Record<string, { id: string; label: string }> = {
   construction: {
     id: 'LEGITEXT000006074096',
-    label: 'Code de la construction et de l\'habitation',
+    label: "Code de la construction et de l'habitation",
   },
   urbanisme: {
     id: 'LEGITEXT000006074075',
@@ -29,10 +28,7 @@ const CODES_BTP: Record<string, { id: string; label: string }> = {
   },
 };
 
-async function legifranceFetch(
-  endpoint: string,
-  body: unknown,
-): Promise<unknown> {
+async function legifranceFetch(endpoint: string, body: unknown): Promise<unknown> {
   const token = await getLegifranceToken();
   const url = `${LEGIFRANCE_BASE}${endpoint}`;
   const response = await fetch(url, {
@@ -64,21 +60,10 @@ export function registerLegifranceTools(server: McpServer): void {
           "Texte à rechercher (ex: 'amiante travaux', 'échafaudage sécurité', 'déchets chantier')",
         ),
       code: z
-        .enum([
-          'construction',
-          'urbanisme',
-          'environnement',
-          'travail',
-          'marches_publics',
-        ])
+        .enum(['construction', 'urbanisme', 'environnement', 'travail', 'marches_publics'])
         .optional()
         .describe('Limiter la recherche à un code spécifique'),
-      limite: z
-        .number()
-        .min(1)
-        .max(20)
-        .optional()
-        .describe('Nombre max de résultats (défaut: 10)'),
+      limite: z.number().min(1).max(20).optional().describe('Nombre max de résultats (défaut: 10)'),
     },
     async ({ recherche, code, limite }) => {
       if (!isLegifranceConfigured()) {
@@ -93,6 +78,7 @@ export function registerLegifranceTools(server: McpServer): void {
       }
 
       try {
+        const selectedCode = code ? CODES_BTP[code] : undefined;
         const searchBody: Record<string, unknown> = {
           recherche: {
             champs: [
@@ -114,12 +100,12 @@ export function registerLegifranceTools(server: McpServer): void {
         };
 
         // If a specific code is selected, search within that code
-        if (code && CODES_BTP[code]) {
+        if (selectedCode) {
           searchBody.fond = 'CODE_DATE';
           (searchBody.recherche as Record<string, unknown>).filtres = [
             {
               facette: 'TEXT_ID',
-              valeurs: [CODES_BTP[code]!.id],
+              valeurs: [selectedCode.id],
             },
           ];
         } else {
@@ -130,13 +116,16 @@ export function registerLegifranceTools(server: McpServer): void {
         const results = data as {
           results?: Array<{
             titles?: Array<{ title?: string }>;
-            sections?: Array<{ title?: string; articles?: Array<{ id?: string; num?: string; content?: string }> }>;
+            sections?: Array<{
+              title?: string;
+              articles?: Array<{ id?: string; num?: string; content?: string }>;
+            }>;
           }>;
           totalResultNumber?: number;
         };
 
         const lines = [
-          `${results.totalResultNumber ?? 0} résultat(s) trouvé(s)${code ? ` dans ${CODES_BTP[code]!.label}` : ''}:\n`,
+          `${results.totalResultNumber ?? 0} résultat(s) trouvé(s)${selectedCode ? ` dans ${selectedCode.label}` : ''}:\n`,
         ];
 
         if (results.results) {
@@ -180,9 +169,7 @@ export function registerLegifranceTools(server: McpServer): void {
     {
       article_id: z
         .string()
-        .describe(
-          "Identifiant LEGIARTI de l'article (ex: 'LEGIARTI000006896116')",
-        ),
+        .describe("Identifiant LEGIARTI de l'article (ex: 'LEGIARTI000006896116')"),
     },
     async ({ article_id }) => {
       if (!isLegifranceConfigured()) {
@@ -228,9 +215,7 @@ export function registerLegifranceTools(server: McpServer): void {
         if (a.num) lines.push(`# Article ${a.num}`);
         if (a.etat) lines.push(`État: ${a.etat}`);
         if (a.dateDebut)
-          lines.push(
-            `En vigueur depuis: ${new Date(a.dateDebut).toLocaleDateString('fr-FR')}`,
-          );
+          lines.push(`En vigueur depuis: ${new Date(a.dateDebut).toLocaleDateString('fr-FR')}`);
         if (a.texte) {
           lines.push('');
           lines.push(a.texte);

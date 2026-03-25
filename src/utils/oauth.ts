@@ -30,11 +30,7 @@ export async function getLegifranceToken(): Promise<string> {
   }
 
   // Return cached token if still valid (with 60s margin)
-  if (
-    cachedToken &&
-    Date.now() - cachedToken.obtained_at <
-      (cachedToken.expires_in - 60) * 1000
-  ) {
+  if (cachedToken && Date.now() - cachedToken.obtained_at < (cachedToken.expires_in - 60) * 1000) {
     logger.debug('Using cached Legifrance token');
     return cachedToken.access_token;
   }

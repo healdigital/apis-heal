@@ -3,10 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 const CADASTRE_BASE = 'https://apicarto.ign.fr/api/cadastre';
 
-async function fetchCadastre(
-  endpoint: string,
-  params: Record<string, string>,
-): Promise<unknown> {
+async function fetchCadastre(endpoint: string, params: Record<string, string>): Promise<unknown> {
   const searchParams = new URLSearchParams(params);
   const url = `${CADASTRE_BASE}${endpoint}?${searchParams.toString()}`;
   const response = await fetch(url);
@@ -48,14 +45,11 @@ function formatParcelleResult(data: unknown): string {
     lines.push(
       `Parcelle: ${p.code_dep ?? ''}${p.code_com ?? ''} ${p.section ?? ''} ${p.numero ?? ''}`,
     );
-    if (p.contenance)
-      lines.push(`Surface: ${p.contenance} m²`);
+    if (p.contenance) lines.push(`Surface: ${p.contenance} m²`);
     if (p.code_dep) lines.push(`Département: ${p.code_dep}`);
     if (p.code_com) lines.push(`Commune: ${p.code_com}`);
     if (feature.geometry) {
-      lines.push(
-        `Géométrie: ${(feature.geometry as { type: string }).type}`,
-      );
+      lines.push(`Géométrie: ${(feature.geometry as { type: string }).type}`);
     }
     lines.push('');
   }
@@ -74,14 +68,8 @@ export function registerCadastreTools(server: McpServer): void {
         .describe(
           "Code INSEE de la commune (ex: '76540' pour Rouen). Utiliser geocoder_adresse pour l'obtenir.",
         ),
-      section: z
-        .string()
-        .optional()
-        .describe("Section cadastrale (ex: 'AB', 'AC')"),
-      numero: z
-        .string()
-        .optional()
-        .describe("Numéro de parcelle (ex: '0123')"),
+      section: z.string().optional().describe("Section cadastrale (ex: 'AB', 'AC')"),
+      numero: z.string().optional().describe("Numéro de parcelle (ex: '0123')"),
     },
     async ({ code_insee, section, numero }) => {
       try {
@@ -94,9 +82,7 @@ export function registerCadastreTools(server: McpServer): void {
 
         const data = await fetchCadastre('/parcelle', params);
         return {
-          content: [
-            { type: 'text' as const, text: formatParcelleResult(data) },
-          ],
+          content: [{ type: 'text' as const, text: formatParcelleResult(data) }],
         };
       } catch (error) {
         return {
@@ -115,7 +101,7 @@ export function registerCadastreTools(server: McpServer): void {
   // 2. Parcelle par coordonnées
   server.tool(
     'cadastre_parcelle_coords',
-    "Identifie la parcelle cadastrale à un point géographique (latitude/longitude). Retourne la référence cadastrale, surface et géométrie. Utiliser geocoder_adresse au préalable pour convertir une adresse en coordonnées.",
+    'Identifie la parcelle cadastrale à un point géographique (latitude/longitude). Retourne la référence cadastrale, surface et géométrie. Utiliser geocoder_adresse au préalable pour convertir une adresse en coordonnées.',
     {
       latitude: z.number().describe('Latitude du point'),
       longitude: z.number().describe('Longitude du point'),
@@ -133,9 +119,7 @@ export function registerCadastreTools(server: McpServer): void {
           source_ign: 'PCI',
         });
         return {
-          content: [
-            { type: 'text' as const, text: formatParcelleResult(data) },
-          ],
+          content: [{ type: 'text' as const, text: formatParcelleResult(data) }],
         };
       } catch (error) {
         return {

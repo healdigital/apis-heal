@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
-const BASE_CARBONE_URL =
-  'https://data.ademe.fr/data-fair/api/v1/datasets/base-carboner/lines';
+const BASE_CARBONE_URL = 'https://data.ademe.fr/data-fair/api/v1/datasets/base-carboner/lines';
 
 interface BaseCarboneRecord {
   Nom_base_francais?: string;
@@ -47,9 +46,7 @@ async function queryBaseCarbone(params: {
   const response = await fetch(url);
 
   if (!response.ok) {
-    throw new Error(
-      `Base Carbone API error: ${response.status} ${response.statusText}`,
-    );
+    throw new Error(`Base Carbone API error: ${response.status} ${response.statusText}`);
   }
 
   return (await response.json()) as BaseCarboneResponse;
@@ -57,7 +54,7 @@ async function queryBaseCarbone(params: {
 
 function formatCarboneResults(data: BaseCarboneResponse): string {
   if (data.total === 0) {
-    return 'Aucun facteur d\'émission trouvé.';
+    return "Aucun facteur d'émission trouvé.";
   }
 
   const lines = [
@@ -66,10 +63,8 @@ function formatCarboneResults(data: BaseCarboneResponse): string {
 
   for (const record of data.results) {
     lines.push('---');
-    if (record.Nom_base_francais)
-      lines.push(`Nom: ${record.Nom_base_francais}`);
-    if (record.Nom_attribut_francais)
-      lines.push(`Attribut: ${record.Nom_attribut_francais}`);
+    if (record.Nom_base_francais) lines.push(`Nom: ${record.Nom_base_francais}`);
+    if (record.Nom_attribut_francais) lines.push(`Attribut: ${record.Nom_attribut_francais}`);
     if (record.Total_poste_non_decompose !== undefined)
       lines.push(
         `Émission totale: ${record.Total_poste_non_decompose} ${record.Unite_francais ?? 'kgCO2e'}`,
@@ -78,15 +73,12 @@ function formatCarboneResults(data: BaseCarboneResponse): string {
     if (record.CH4f !== undefined) lines.push(`  CH4: ${record.CH4f}`);
     if (record.N2O !== undefined) lines.push(`  N2O: ${record.N2O}`);
     if (record.Categorie) lines.push(`Catégorie: ${record.Categorie}`);
-    if (record.Sous_categorie)
-      lines.push(`Sous-catégorie: ${record.Sous_categorie}`);
+    if (record.Sous_categorie) lines.push(`Sous-catégorie: ${record.Sous_categorie}`);
     if (record.Source) lines.push(`Source: ${record.Source}`);
     if (record.Localisation_geographique)
       lines.push(`Localisation: ${record.Localisation_geographique}`);
-    if (record.Incertitude)
-      lines.push(`Incertitude: ${record.Incertitude}`);
-    if (record.Commentaire_francais)
-      lines.push(`Note: ${record.Commentaire_francais}`);
+    if (record.Incertitude) lines.push(`Incertitude: ${record.Incertitude}`);
+    if (record.Commentaire_francais) lines.push(`Note: ${record.Commentaire_francais}`);
     lines.push('');
   }
 
@@ -107,15 +99,8 @@ export function registerBaseCarboneTools(server: McpServer): void {
       categorie: z
         .string()
         .optional()
-        .describe(
-          "Filtre par catégorie (ex: 'Construction', 'Matériaux de construction')",
-        ),
-      limite: z
-        .number()
-        .min(1)
-        .max(50)
-        .optional()
-        .describe('Nombre max de résultats (défaut: 10)'),
+        .describe("Filtre par catégorie (ex: 'Construction', 'Matériaux de construction')"),
+      limite: z.number().min(1).max(50).optional().describe('Nombre max de résultats (défaut: 10)'),
     },
     async ({ materiau, categorie, limite }) => {
       try {
@@ -131,9 +116,7 @@ export function registerBaseCarboneTools(server: McpServer): void {
         });
 
         return {
-          content: [
-            { type: 'text' as const, text: formatCarboneResults(data) },
-          ],
+          content: [{ type: 'text' as const, text: formatCarboneResults(data) }],
         };
       } catch (error) {
         return {
@@ -156,9 +139,7 @@ export function registerBaseCarboneTools(server: McpServer): void {
     {
       nom_exact: z
         .string()
-        .describe(
-          "Nom précis du matériau ou produit (ex: 'Béton prêt à l\\'emploi C25/30')",
-        ),
+        .describe("Nom précis du matériau ou produit (ex: 'Béton prêt à l\\'emploi C25/30')"),
     },
     async ({ nom_exact }) => {
       try {
@@ -181,9 +162,7 @@ export function registerBaseCarboneTools(server: McpServer): void {
         }
 
         return {
-          content: [
-            { type: 'text' as const, text: formatCarboneResults(data) },
-          ],
+          content: [{ type: 'text' as const, text: formatCarboneResults(data) }],
         };
       } catch (error) {
         return {

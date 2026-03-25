@@ -61,9 +61,9 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 
 // Health check
 app.get('/health', (_req: Request, res: Response) => {
-  res.json({ 
-    status: 'ok', 
-    server: 'french-public-apis', 
+  res.json({
+    status: 'ok',
+    server: 'french-public-apis',
     version: '1.0.0',
     environment: config.NODE_ENV,
   });
@@ -72,30 +72,31 @@ app.get('/health', (_req: Request, res: Response) => {
 // Stateless MCP endpoint - new server+transport per request
 app.post('/mcp', async (req: Request, res: Response) => {
   const requestId = Math.random().toString(36).substring(7);
-  
+
   try {
     logger.debug('Processing MCP request', { requestId });
-    
+
     const server = createServer();
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
     });
     await server.connect(transport);
     await transport.handleRequest(req, res, req.body);
-    
+
     logger.debug('MCP request completed', { requestId });
   } catch (error) {
     logger.error('Error handling MCP request', error, { requestId });
-    
+
     if (!res.headersSent) {
       res.status(500).json({
         jsonrpc: '2.0',
-        error: { 
-          code: -32603, 
+        error: {
+          code: -32603,
           message: 'Internal server error',
-          data: config.NODE_ENV === 'development' && error instanceof Error 
-            ? { message: error.message, stack: error.stack }
-            : undefined,
+          data:
+            config.NODE_ENV === 'development' && error instanceof Error
+              ? { message: error.message, stack: error.stack }
+              : undefined,
         },
         id: null,
       });
@@ -130,7 +131,7 @@ app.use((_req: Request, res: Response) => {
 // Global error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   logger.error('Unhandled error', err);
-  
+
   if (!res.headersSent) {
     res.status(500).json({
       error: 'Internal server error',

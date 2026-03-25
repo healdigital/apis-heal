@@ -33,13 +33,13 @@ class Logger {
 
     switch (level) {
       case 'error':
-        console.error(output);
+        process.stderr.write(`${output}\n`);
         break;
       case 'warn':
-        console.warn(output);
+        process.stderr.write(`${output}\n`);
         break;
       default:
-        console.log(output);
+        process.stdout.write(`${output}\n`);
     }
   }
 
@@ -56,13 +56,12 @@ class Logger {
   }
 
   error(message: string, error?: Error | unknown, context?: LogContext): void {
-    const errorContext = error instanceof Error
-      ? { error: error.message, stack: error.stack, ...context }
-      : { error: String(error), ...context };
+    const errorContext =
+      error instanceof Error
+        ? { error: error.message, stack: error.stack, ...context }
+        : { error: String(error), ...context };
     this.log('error', message, errorContext);
   }
 }
 
-export const logger = new Logger(
-  (process.env.LOG_LEVEL as LogLevel) ?? 'info',
-);
+export const logger = new Logger((process.env.LOG_LEVEL as LogLevel) ?? 'info');

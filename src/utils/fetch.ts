@@ -18,10 +18,7 @@ export class FetchError extends Error {
   }
 }
 
-export async function fetchWithTimeout(
-  url: string,
-  options: FetchOptions = {},
-): Promise<Response> {
+export async function fetchWithTimeout(url: string, options: FetchOptions = {}): Promise<Response> {
   const timeout = options.timeout ?? 30000; // 30s default
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -44,19 +41,12 @@ export async function fetchWithTimeout(
   }
 }
 
-export async function fetchJson<T = unknown>(
-  url: string,
-  options: FetchOptions = {},
-): Promise<T> {
+export async function fetchJson<T = unknown>(url: string, options: FetchOptions = {}): Promise<T> {
   const response = await fetchWithTimeout(url, options);
 
   if (!response.ok) {
     const text = await response.text().catch(() => response.statusText);
-    throw new FetchError(
-      `HTTP ${response.status}: ${text}`,
-      response.status,
-      response.statusText,
-    );
+    throw new FetchError(`HTTP ${response.status}: ${text}`, response.status, response.statusText);
   }
 
   return (await response.json()) as T;

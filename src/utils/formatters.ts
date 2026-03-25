@@ -26,9 +26,7 @@ export function formatField(label: string, value: unknown): string | null {
   return `${label}: ${String(value)}`;
 }
 
-export function formatFields(
-  fields: Array<{ label: string; value: unknown }>,
-): string[] {
+export function formatFields(fields: Array<{ label: string; value: unknown }>): string[] {
   return fields
     .map(({ label, value }) => formatField(label, value))
     .filter((line): line is string => line !== null);

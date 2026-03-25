@@ -3,18 +3,13 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 const GEORISQUES_BASE = 'https://www.georisques.gouv.fr/api/v1';
 
-async function fetchGeorisques(
-  endpoint: string,
-  params: Record<string, string>,
-): Promise<unknown> {
+async function fetchGeorisques(endpoint: string, params: Record<string, string>): Promise<unknown> {
   const searchParams = new URLSearchParams(params);
   const url = `${GEORISQUES_BASE}${endpoint}?${searchParams.toString()}`;
   const response = await fetch(url);
 
   if (!response.ok) {
-    throw new Error(
-      `Géorisques API error: ${response.status} ${response.statusText}`,
-    );
+    throw new Error(`Géorisques API error: ${response.status} ${response.statusText}`);
   }
 
   return response.json();
@@ -52,10 +47,7 @@ export function registerGeorisquesTools(server: McpServer): void {
     {
       latitude: z.number().describe('Latitude du site (ex: 49.4432)'),
       longitude: z.number().describe('Longitude du site (ex: 1.0999)'),
-      rayon: z
-        .number()
-        .optional()
-        .describe('Rayon de recherche en mètres (défaut: 1000)'),
+      rayon: z.number().optional().describe('Rayon de recherche en mètres (défaut: 1000)'),
     },
     async ({ latitude, longitude, rayon }) => {
       try {
@@ -63,17 +55,16 @@ export function registerGeorisquesTools(server: McpServer): void {
         const r = String(rayon ?? 1000);
 
         // Fetch multiple risk categories in parallel
-        const [risquesRapport, cavites, mouvements, ssp, catnat] =
-          await Promise.allSettled([
-            fetchGeorisques('/resultats_rapport_risque', { latlon }),
-            fetchGeorisques('/cavites', { latlon, rayon: r }),
-            fetchGeorisques('/mvt', { latlon, rayon: r }),
-            fetchGeorisques('/ssp', { latlon, rayon: r }),
-            fetchGeorisques('/gaspar/catnat', {
-              latlon,
-              rayon: r,
-            }),
-          ]);
+        const [risquesRapport, cavites, mouvements, ssp, catnat] = await Promise.allSettled([
+          fetchGeorisques('/resultats_rapport_risque', { latlon }),
+          fetchGeorisques('/cavites', { latlon, rayon: r }),
+          fetchGeorisques('/mvt', { latlon, rayon: r }),
+          fetchGeorisques('/ssp', { latlon, rayon: r }),
+          fetchGeorisques('/gaspar/catnat', {
+            latlon,
+            rayon: r,
+          }),
+        ]);
 
         const report: string[] = [
           `# Rapport des risques — ${latitude}, ${longitude} (rayon ${rayon ?? 1000}m)\n`,
@@ -129,9 +120,7 @@ export function registerGeorisquesTools(server: McpServer): void {
             total_count?: number;
           };
           const count = cn.data?.length ?? cn.total_count ?? 0;
-          report.push(
-            `## Arrêtés de catastrophe naturelle: ${count} enregistré(s)`,
-          );
+          report.push(`## Arrêtés de catastrophe naturelle: ${count} enregistré(s)`);
           if (count > 0) {
             report.push(JSON.stringify(cn.data?.slice(0, 10), null, 2));
           }
@@ -160,9 +149,7 @@ export function registerGeorisquesTools(server: McpServer): void {
     'georisques_seisme',
     "Retourne la classification sismique d'une commune par code INSEE. Zones: 1 (très faible) à 5 (forte). Important pour le dimensionnement structurel dans le mémoire technique.",
     {
-      code_insee: z
-        .string()
-        .describe("Code INSEE de la commune (ex: '76540' pour Rouen)"),
+      code_insee: z.string().describe("Code INSEE de la commune (ex: '76540' pour Rouen)"),
     },
     async ({ code_insee }) => {
       try {
@@ -170,9 +157,7 @@ export function registerGeorisquesTools(server: McpServer): void {
           code_insee,
         });
         return {
-          content: [
-            { type: 'text' as const, text: JSON.stringify(data, null, 2) },
-          ],
+          content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
         };
       } catch (error) {
         return {
@@ -191,7 +176,7 @@ export function registerGeorisquesTools(server: McpServer): void {
   // 3. Retrait-gonflement argiles
   server.tool(
     'georisques_argiles',
-    "Évalue le risque de retrait-gonflement des argiles à un point GPS. Niveaux: faible, moyen, fort. Critique pour le choix des fondations (semelles, radier, pieux) dans le mémoire technique.",
+    'Évalue le risque de retrait-gonflement des argiles à un point GPS. Niveaux: faible, moyen, fort. Critique pour le choix des fondations (semelles, radier, pieux) dans le mémoire technique.',
     {
       latitude: z.number().describe('Latitude du site'),
       longitude: z.number().describe('Longitude du site'),
@@ -202,9 +187,7 @@ export function registerGeorisquesTools(server: McpServer): void {
           latlon: `${latitude},${longitude}`,
         });
         return {
-          content: [
-            { type: 'text' as const, text: JSON.stringify(data, null, 2) },
-          ],
+          content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
         };
       } catch (error) {
         return {
@@ -227,10 +210,7 @@ export function registerGeorisquesTools(server: McpServer): void {
     {
       latitude: z.number().describe('Latitude du site'),
       longitude: z.number().describe('Longitude du site'),
-      rayon: z
-        .number()
-        .optional()
-        .describe('Rayon de recherche en mètres (défaut: 500)'),
+      rayon: z.number().optional().describe('Rayon de recherche en mètres (défaut: 500)'),
     },
     async ({ latitude, longitude, rayon }) => {
       try {
@@ -239,9 +219,7 @@ export function registerGeorisquesTools(server: McpServer): void {
           rayon: String(rayon ?? 500),
         });
         return {
-          content: [
-            { type: 'text' as const, text: JSON.stringify(data, null, 2) },
-          ],
+          content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
         };
       } catch (error) {
         return {

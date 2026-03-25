@@ -3,10 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 const GPU_BASE = 'https://apicarto.ign.fr/api/gpu';
 
-async function fetchGPU(
-  endpoint: string,
-  params: Record<string, string>,
-): Promise<unknown> {
+async function fetchGPU(endpoint: string, params: Record<string, string>): Promise<unknown> {
   const searchParams = new URLSearchParams(params);
   const url = `${GPU_BASE}${endpoint}?${searchParams.toString()}`;
   const response = await fetch(url);
@@ -60,9 +57,7 @@ function formatZonageResult(data: unknown): string {
         A: 'Agricole',
         N: 'Naturelle',
       };
-      lines.push(
-        `Type: ${p.typezone} — ${typeLabels[p.typezone] ?? 'Autre'}`,
-      );
+      lines.push(`Type: ${p.typezone} — ${typeLabels[p.typezone] ?? 'Autre'}`);
     }
     if (p.destdomi) lines.push(`Destination dominante: ${p.destdomi}`);
     if (p.idurba) lines.push(`Document d'urbanisme: ${p.idurba}`);
@@ -127,17 +122,13 @@ export function registerUrbanismeTools(server: McpServer): void {
           fetchGPU('/document', { geom }),
         ]);
 
-        const sections: string[] = [
-          `# Zonage PLU — ${latitude}, ${longitude}\n`,
-        ];
+        const sections: string[] = [`# Zonage PLU — ${latitude}, ${longitude}\n`];
 
         if (zonage.status === 'fulfilled') {
           sections.push('## Zones');
           sections.push(formatZonageResult(zonage.value));
         } else {
-          sections.push(
-            `## Zones\nErreur: ${zonage.reason}`,
-          );
+          sections.push(`## Zones\nErreur: ${zonage.reason}`);
         }
 
         if (document.status === 'fulfilled') {
@@ -158,8 +149,7 @@ export function registerUrbanismeTools(server: McpServer): void {
               const p = f.properties;
               if (p.typedoc) sections.push(`Type: ${p.typedoc}`);
               if (p.etat) sections.push(`État: ${p.etat}`);
-              if (p.datappro)
-                sections.push(`Date d'approbation: ${p.datappro}`);
+              if (p.datappro) sections.push(`Date d'approbation: ${p.datappro}`);
               if (p.nom) sections.push(`Nom: ${p.nom}`);
             }
           }
@@ -195,17 +185,14 @@ export function registerUrbanismeTools(server: McpServer): void {
         const geom = makePointGeom(longitude, latitude);
 
         // Fetch all types of servitudes in parallel
-        const [prescSurf, prescLin, prescPct, assiette] =
-          await Promise.allSettled([
-            fetchGPU('/prescription-surf', { geom }),
-            fetchGPU('/prescription-lin', { geom }),
-            fetchGPU('/prescription-pct', { geom }),
-            fetchGPU('/assiette-sup-s', { geom }),
-          ]);
+        const [prescSurf, prescLin, prescPct, assiette] = await Promise.allSettled([
+          fetchGPU('/prescription-surf', { geom }),
+          fetchGPU('/prescription-lin', { geom }),
+          fetchGPU('/prescription-pct', { geom }),
+          fetchGPU('/assiette-sup-s', { geom }),
+        ]);
 
-        const sections: string[] = [
-          `# Servitudes — ${latitude}, ${longitude}\n`,
-        ];
+        const sections: string[] = [`# Servitudes — ${latitude}, ${longitude}\n`];
 
         if (prescSurf.status === 'fulfilled') {
           sections.push('## Prescriptions surfaciques');
@@ -234,13 +221,10 @@ export function registerUrbanismeTools(server: McpServer): void {
             }>;
           };
           if (aData.features?.length > 0) {
-            sections.push(
-              `## Assiettes de servitude: ${aData.features.length}`,
-            );
+            sections.push(`## Assiettes de servitude: ${aData.features.length}`);
             for (const f of aData.features) {
               const p = f.properties;
-              if (p.libelle)
-                sections.push(`- ${p.libelle}${p.libelong ? ': ' + p.libelong : ''}`);
+              if (p.libelle) sections.push(`- ${p.libelle}${p.libelong ? ': ' + p.libelong : ''}`);
             }
           } else {
             sections.push('## Assiettes de servitude: aucune');

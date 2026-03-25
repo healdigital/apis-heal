@@ -46,9 +46,9 @@ async function queryBoamp(params: {
   if (params.orderBy) searchParams.set('order_by', params.orderBy);
 
   const url = `${BOAMP_BASE}/records?${searchParams.toString()}`;
-  
+
   logger.debug('Querying BOAMP API', { url, params });
-  
+
   return fetchJson<BoampResponse>(url);
 }
 
@@ -62,20 +62,22 @@ function formatBoampResults(data: BoampResponse): string {
   for (const record of data.results) {
     const r = record.record ?? record;
     lines.push('---');
-    lines.push(...formatFields([
-      { label: 'Objet', value: r.objet },
-      { label: 'Type', value: r.type_marche },
-      { label: 'Nature', value: r.nature },
-      { label: 'Acheteur', value: r.acheteur },
-      { label: 'Département', value: r.departement },
-      { label: 'Date parution', value: r.dateparution },
-      { label: 'Date limite', value: r.date_limite },
-      { label: 'Montant', value: r.montant },
-      { label: "Lieu d'exécution", value: r.lieu_execution },
-      { label: 'CPV', value: r.cpv },
-      { label: 'URL', value: r.url_avis },
-      { label: 'ID', value: r.id },
-    ]));
+    lines.push(
+      ...formatFields([
+        { label: 'Objet', value: r.objet },
+        { label: 'Type', value: r.type_marche },
+        { label: 'Nature', value: r.nature },
+        { label: 'Acheteur', value: r.acheteur },
+        { label: 'Département', value: r.departement },
+        { label: 'Date parution', value: r.dateparution },
+        { label: 'Date limite', value: r.date_limite },
+        { label: 'Montant', value: r.montant },
+        { label: "Lieu d'exécution", value: r.lieu_execution },
+        { label: 'CPV', value: r.cpv },
+        { label: 'URL', value: r.url_avis },
+        { label: 'ID', value: r.id },
+      ]),
+    );
     lines.push('');
   }
 
@@ -86,7 +88,7 @@ export function registerBoampTools(server: McpServer): void {
   // 1. Recherche générale marchés publics
   server.tool(
     'boamp_search_marches',
-    "Recherche les marchés publics sur le BOAMP (Bulletin Officiel des Annonces de Marchés Publics). Permet de filtrer par type de marché, département, texte libre, code CPV. Données mises à jour 2x/jour.",
+    'Recherche les marchés publics sur le BOAMP (Bulletin Officiel des Annonces de Marchés Publics). Permet de filtrer par type de marché, département, texte libre, code CPV. Données mises à jour 2x/jour.',
     {
       recherche: z
         .string()
@@ -105,9 +107,7 @@ export function registerBoampTools(server: McpServer): void {
       cpv_prefix: z
         .string()
         .optional()
-        .describe(
-          "Préfixe code CPV (ex: '45' pour travaux de construction)",
-        ),
+        .describe("Préfixe code CPV (ex: '45' pour travaux de construction)"),
       limite: z
         .number()
         .min(1)
@@ -118,12 +118,9 @@ export function registerBoampTools(server: McpServer): void {
     async ({ recherche, type_marche, departement, cpv_prefix, limite }) => {
       try {
         const whereClauses: string[] = [];
-        if (type_marche)
-          whereClauses.push(`type_marche="${type_marche}"`);
-        if (departement)
-          whereClauses.push(`departement="${departement}"`);
-        if (cpv_prefix)
-          whereClauses.push(`cpv LIKE "${cpv_prefix}%"`);
+        if (type_marche) whereClauses.push(`type_marche="${type_marche}"`);
+        if (departement) whereClauses.push(`departement="${departement}"`);
+        if (cpv_prefix) whereClauses.push(`cpv LIKE "${cpv_prefix}%"`);
 
         const data = await queryBoamp({
           where: whereClauses.length > 0 ? whereClauses.join(' AND ') : undefined,
@@ -132,7 +129,7 @@ export function registerBoampTools(server: McpServer): void {
           orderBy: 'dateparution DESC',
         });
 
-        logger.info('BOAMP search completed', { 
+        logger.info('BOAMP search completed', {
           totalCount: data.total_count,
           resultsReturned: data.results.length,
         });
@@ -160,9 +157,7 @@ export function registerBoampTools(server: McpServer): void {
     'boamp_get_marche',
     "Récupère le détail complet d'une annonce de marché public par son identifiant BOAMP.",
     {
-      id_annonce: z
-        .string()
-        .describe("Identifiant de l'annonce BOAMP"),
+      id_annonce: z.string().describe("Identifiant de l'annonce BOAMP"),
     },
     async ({ id_annonce }) => {
       try {
@@ -196,7 +191,7 @@ export function registerBoampTools(server: McpServer): void {
         }
 
         logger.info('BOAMP marché retrieved', { id_annonce });
-        
+
         return {
           content: [
             {
@@ -234,9 +229,7 @@ export function registerBoampTools(server: McpServer): void {
       recherche: z
         .string()
         .optional()
-        .describe(
-          "Filtre texte supplémentaire (ex: 'gros oeuvre', 'béton', 'réhabilitation')",
-        ),
+        .describe("Filtre texte supplémentaire (ex: 'gros oeuvre', 'béton', 'réhabilitation')"),
       limite: z
         .number()
         .min(1)
@@ -254,9 +247,7 @@ export function registerBoampTools(server: McpServer): void {
           throw new Error('Failed to format date');
         }
 
-        const deptFilter = DEPARTEMENTS_NORMANDIE.map(
-          (d) => `departement="${d}"`,
-        ).join(' OR ');
+        const deptFilter = DEPARTEMENTS_NORMANDIE.map((d) => `departement="${d}"`).join(' OR ');
         const where = `type_marche="Travaux" AND (${deptFilter}) AND dateparution>="${dateStr}"`;
 
         const data = await queryBoamp({
